@@ -50,7 +50,8 @@ def test_get_put_when_buffer_size_equals_objects_count():
     for i in objects:
         assert i == diskq.get()
     remove_queue(queue)
-   
+  
+
 def test_get_put_when_buffer_size_exceeds_objects_count():
     cache_size = 20
     objects = range(50)
@@ -64,5 +65,24 @@ def test_get_put_when_buffer_size_exceeds_objects_count():
     for i in objects:
         assert i == diskq.get()
     remove_queue(queue)
-   
+
+
+def test_queue_chunk_removed_after_loading_into_buffer():
+    cache_size = 2
+    objects = range(10)
+    queue = 'testq'
+    datadir = './'
+    diskq = DiskQueue(path=datadir, queue_name=queue, cache_size=cache_size)
+
+    for i in objects:
+        diskq.put(i)
+
+    for i in objects:
+        diskq.get()
+
+    queue_dir_content = os.listdir(os.path.join(datadir, queue))
+    
+    assert len(queue_dir_content) == 1 
+    assert queue_dir_content[0] == '000'
+    remove_queue(queue)
 

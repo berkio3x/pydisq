@@ -71,11 +71,15 @@ class DiskQueue:
        
         file_name  = os.path.join(self.queue_dir, str(self.head))
         
-        print(f"trying to sync form file: {file_name}")
         if os.path.exists(file_name):
             with open(file_name, 'rb') as fp:
                 data  = marshal.load(fp)
                 self.get_memory_buffer = data
+                try:
+                    os.remove(file_name)
+                except Exception as e:
+                    print(e)
+                    print("error removing queue file {file_name} from disk")
 
     def _get_unsafe(self):
         
