@@ -17,3 +17,9 @@ for i in range(50):
     obj = diskQ.get()
     print(obj)
 ```
+### Tests
+Run test by using this commands.
+```bash
+$ cd src/tests && pytest -vvv
+
+```
