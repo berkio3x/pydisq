@@ -81,6 +81,12 @@ class DiskQueue:
                     print(e)
                     print("error removing queue file {file_name} from disk")
 
+    def __len__(self):
+        """ Return the length of the queue"""
+
+        return (self.tail - self.head)  * self.cache_size + (len(self.get_memory_buffer) \
+                + len(self.put_memory_buffer))
+
     def _get_unsafe(self):
         
         """

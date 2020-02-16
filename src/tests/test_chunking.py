@@ -86,3 +86,43 @@ def test_queue_chunk_removed_after_loading_into_buffer():
     assert queue_dir_content[0] == '000'
     remove_queue(queue)
 
+
+def test_get_queue_length_when_memory_buffer_size_equal_obects_count():
+    cache_size = 10
+    objects = range(10)
+    queue = 'testq'
+    datadir = './'
+    diskq = DiskQueue(path=datadir, queue_name=queue, cache_size=cache_size)
+
+    for i in objects:
+        diskq.put(i)
+
+    assert len(diskq) == len(objects)
+    remove_queue(queue)
+
+
+def test_get_queue_length_when_obects_count_exceed_memory_buffer_size():
+    cache_size = 10
+    objects = range(50)
+    queue = 'testq'
+    datadir = './'
+    diskq = DiskQueue(path=datadir, queue_name=queue, cache_size=cache_size)
+
+    for i in objects:
+        diskq.put(i)
+
+    assert len(diskq) == len(objects)
+    remove_queue(queue)
+
+def test_get_queue_length_when_obects_count_is_less_than_memory_buffer_size():
+    cache_size = 50
+    objects = range(10)
+    queue = 'testq'
+    datadir = './'
+    diskq = DiskQueue(path=datadir, queue_name=queue, cache_size=cache_size)
+
+    for i in objects:
+        diskq.put(i)
+
+    assert len(diskq) == len(objects)
+    remove_queue(queue)
