@@ -54,7 +54,7 @@ class DiskQueue:
             f.read()
             f.seek(0)
             f.write(f"{head},{tail}")
-    
+
     def sync_memory_cache_to_fs(self):
         """
         Sync the cache in memory to filesystem
@@ -125,7 +125,7 @@ class DiskQueue:
 if __name__ == '__main__':
     import random
     dummy_data = []
-    for i in range(14):
+    for i in range(50):
         dummy_data.append({'a':random.randint(1,2000)})
 
     diskQ = DiskQueue(path='./', queue_name='es-miss', cache_size=10)
@@ -136,6 +136,6 @@ if __name__ == '__main__':
 
     
     print("Getting entries from queue")
-    for i in range(15):
+    for i in range(55):
         print(diskQ.get())
 
