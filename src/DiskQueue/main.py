@@ -2,7 +2,6 @@ import os, sys
 import marshal
 
 
-
 class DiskQueue:
 
     def __init__(self, path, queue_name, cache_size, memory_safe=False):
@@ -55,7 +54,15 @@ class DiskQueue:
             f.seek(0)
             f.write(f"{head},{tail}")
 
-    def sync_memory_cache_to_fs(self):
+
+    def sync(self):
+        """
+        Explicitly sync the memory buffer to disk.
+        """
+        self._sync_memory_buffer_to_fs()
+    
+
+    def _sync_memory_buffer_to_fs(self):
         """
         Sync the cache in memory to filesystem
         """
@@ -86,6 +93,10 @@ class DiskQueue:
 
         return (self.tail - self.head)  * self.cache_size + (len(self.get_memory_buffer) \
                 + len(self.put_memory_buffer))
+
+    def close(self):
+        pass
+
 
     def _get_unsafe(self):
         
@@ -125,7 +136,7 @@ class DiskQueue:
         """
     
         if len(self.put_memory_buffer) >= self.cache_size:
-            self.sync_memory_cache_to_fs()
+            self._sync_memory_buffer_to_fs()
             self.put_memory_buffer = []
             self.tail += 1
             self._sync_index_pointers(self.head, self.tail)
@@ -135,17 +146,18 @@ class DiskQueue:
 if __name__ == '__main__':
     import random
     dummy_data = []
-    for i in range(50):
+
+    for i in range(1000000):
         dummy_data.append({'a':random.randint(1,2000)})
 
-    diskQ = DiskQueue(path='./', queue_name='es-miss', cache_size=10)
-    
+    diskQ = DiskQueue(path='./', queue_name='es-miss', cache_size=10000)
+     
     for obj in dummy_data:
         print(f"adding entry {obj}")
         diskQ.put(obj)
 
     
     print("Getting entries from queue")
-    for i in range(55):
+    for i in range(1000000):
         print(diskQ.get())
 
