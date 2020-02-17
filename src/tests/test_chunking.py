@@ -213,6 +213,65 @@ def test_tail_pointer_sync_to_disk_on_increment():
     remove_queue(queue)
 
 
+
+def test_head_pointer_increments_correctly():
+
+    cache_size = 5
+    objects = range(10)
+    queue = 'testq'
+    datadir = './'
+
+    diskq = DiskQueue(path=datadir, queue_name=queue, cache_size=cache_size)
+    
+    assert diskq.head == 0 
+    prev_head = diskq.head
+
+    # Tail pointer is incremented when no. of objects equal to memory buffer is ,
+    # crossed & they are flushed to disk
+    
+    for i in objects:
+        diskq.put(i)
+
+    for i in range(len(objects)):
+        diskq.get()
+
+    assert prev_head + 1  == diskq.head
+    remove_queue(queue)
+
+
+def test_head_pointer_syncs_to_disk_after_get_exceeds_buffer_size():
+
+    cache_size = 5
+    objects = range(10)
+    queue = 'testq'
+    datadir = './'
+
+    diskq = DiskQueue(path=datadir, queue_name=queue, cache_size=cache_size)
+    
+    assert diskq.head == 0 
+    prev_head = diskq.head
+
+    # Tail pointer is incremented when no. of objects equal to memory buffer is ,
+    # crossed & they are flushed to disk
+
+    for i in objects:
+        diskq.put(i)
+
+    for i in range(len(objects)):
+        diskq.get()
+        
+
+    index_file = os.path.join(datadir, os.path.join(queue,'000'))
+    
+    with open(index_file) as f:
+        head , tail = [int(x) for x in f.read().split(',')]
+   
+    assert head  == diskq.head 
+    remove_queue(queue)
+
+
+
+
 def tesxt_queue_recover_with_last_working_breakpoints():
     cache_size = 2
     objects = range(10)
