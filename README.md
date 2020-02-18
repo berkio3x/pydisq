@@ -1,4 +1,12 @@
-# python-disk-assisted-queue
+# pydisq 🦦
+####  Disk assisted queue implemented in python
+
+
+----
+
+
+⚠️ NOTE:  ***Work in progress***
+
 ```python
 import random
 
