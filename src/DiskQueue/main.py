@@ -60,6 +60,10 @@ class DiskQueue:
         Explicitly sync the memory buffer to disk.
         """
         self._sync_memory_buffer_to_fs()
+        self.put_memory_buffer = []
+        self.tail += 1
+        self._sync_index_pointers(self.head, self.tail)
+
     
 
     def _sync_memory_buffer_to_fs(self):

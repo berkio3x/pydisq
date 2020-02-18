@@ -126,30 +126,6 @@ def test_get_queue_length_when_obects_count_is_less_than_memory_buffer_size():
     assert len(diskq) == len(objects)
     remove_queue(queue)
 
-
-def test_explicit_sync_creates_another_chunk():
-
-    cache_size = 10
-    objects = range(20)
-    queue = 'testq'
-    datadir = './'
-    
-    diskq = DiskQueue(path=datadir, queue_name=queue, cache_size=cache_size)
-
-    for i in objects:
-        diskq.put(i)
-
-
-    # Remove index file '000' before counting queue chunks
-    os.remove(os.path.join(datadir, os.path.join(queue, '000')))
-    assert int(len(objects)/cache_size) - 1 == len(os.listdir(os.path.join(datadir, queue)))
-    diskq.sync()
-    assert int(len(objects)/cache_size) == len(os.listdir(os.path.join(datadir, queue))) 
-    
-    remove_queue(queue)
-
-
-
 def test_index_pointers_are_0_0_on_new_queue():
 
     cache_size = 2
@@ -270,9 +246,35 @@ def test_head_pointer_syncs_to_disk_after_get_exceeds_buffer_size():
     remove_queue(queue)
 
 
+def test_explicit_sync():
+
+    cache_size = 2
+    queue = 'testq'
+    datadir = './'
+    
+    diskq = DiskQueue(path=datadir, queue_name=queue, cache_size=cache_size)
+
+    diskq.put(0)
+    diskq.put(1)
+    diskq.put(2)
+    diskq.put(3)
+
+    tail_before_sync = diskq.tail  
+    diskq.sync()
+    assert tail_before_sync + 1 == diskq.tail
+
+    assert diskq.get() == 0
+    assert diskq.get() == 1
+    assert diskq.get() == 2
+    assert diskq.get() == 3
+    
+    remove_queue(queue)
 
 
-def tesxt_queue_recover_with_last_working_breakpoints():
+
+
+# TODO: fix this
+def txest_queue_recover_with_last_working_breakpoints():
     cache_size = 2
     objects = range(10)
     queue = 'testq'
@@ -284,7 +286,6 @@ def tesxt_queue_recover_with_last_working_breakpoints():
         diskq.put(i)
 
     diskq.sync()
-    diskq.close()
 
     # Test recovery of queue
     diskq = DiskQueue(path=datadir, queue_name=queue, cache_size=cache_size)
@@ -293,5 +294,5 @@ def tesxt_queue_recover_with_last_working_breakpoints():
         obj = diskq.get()
         assert i == obj
         print (obj)
-    #remove_queue(queue)
+    remove_queue(queue)
 
