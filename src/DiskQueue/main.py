@@ -1,5 +1,6 @@
 import os, sys
 import marshal
+import random 
 
 
 class DiskQueue:
@@ -33,6 +34,11 @@ class DiskQueue:
             with open(self.index_file) as f:
                 self.head , self.tail = [int(x) for x in f.read().split(',')]
 
+            self._sync_from_fs_to_memory_buffer()
+            # TODO: this bug was not captured in the tests.
+            self.head += 1
+            self._sync_index_pointers(self.head, self.tail)
+
         else:
             self.head, self.tail = 0,0
             os.mkdir(self.queue_dir)
@@ -41,7 +47,7 @@ class DiskQueue:
 
         """ Initialize get & put memory buffers   """
         
-        self._sync_from_fs_to_memory_buffer()
+
         
 
     def _sync_index_pointers(self, head, tail):
@@ -59,20 +65,48 @@ class DiskQueue:
         """
         Explicitly sync the memory buffer to disk.
         """
-        self._sync_memory_buffer_to_fs()
+
+        ''' 
+        H(1)        T(3)
+                                            
+        FILEINDEX    :     0     1     2     3     
+        QUEUECONTENT :    <0 1> [2 3] [4 5] <6 7>    
+        POINTERS     :     ^ ^               ^ ^ 
+                           G G               P P  
+        
+        H(1)        T(4)
+                                            
+        FILEINDEX    :     0     1     2     3     
+        QUEUECONTENT :    [0 1] [2 3] [4 5] [6 7]    
+        POINTERS     :                    
+                           G=<>               P=<>
+        '''
+
+
+
+        self._sync_memory_buffer_to_fs('put_buffer')
+        self._sync_memory_buffer_to_fs('get_buffer')
         self.put_memory_buffer = []
+        self.get_memory_buffer = []
         self.tail += 1
+        if self.head > 0:
+            self.head -= 1
         self._sync_index_pointers(self.head, self.tail)
 
     
 
-    def _sync_memory_buffer_to_fs(self):
+    def _sync_memory_buffer_to_fs(self, buffer_type):
         """
         Sync the cache in memory to filesystem
         """
-        file_name  = os.path.join(self.queue_dir, str(self.tail))
+        if buffer_type == 'put_buffer':
+            mem_buffer = self.put_memory_buffer
+            file_name  = os.path.join(self.queue_dir, str(self.tail))
+        else:
+            file_name  = os.path.join(self.queue_dir, str(self.head-1))
+            mem_buffer = self.get_memory_buffer
         with open(file_name, 'wb+') as fp:
-            marshal.dump(self.put_memory_buffer, fp)
+            marshal.dump(mem_buffer, fp)
 
 
     def _sync_from_fs_to_memory_buffer(self):
@@ -140,7 +174,7 @@ class DiskQueue:
         """
     
         if len(self.put_memory_buffer) >= self.cache_size:
-            self._sync_memory_buffer_to_fs()
+            self._sync_memory_buffer_to_fs('put_buffer')
             self.put_memory_buffer = []
             self.tail += 1
             self._sync_index_pointers(self.head, self.tail)
