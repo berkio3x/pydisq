@@ -30,7 +30,7 @@ for i in range(50):
 ```
 
 
-### Multi consumer example.
+#### Multiple workers using threads.
 ```python
 from DiskQueue import DiskQueue
 import threading
