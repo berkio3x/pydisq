@@ -2,6 +2,7 @@ import os, sys
 import marshal
 import random 
 
+from threading import Lock
 
 class DiskQueue:
 
@@ -15,6 +16,9 @@ class DiskQueue:
         
         self.get_memory_buffer = []
         self.put_memory_buffer = []
+
+        self._thread_lock = Lock()
+
 
         if memory_safe:
             self.get = None
@@ -46,8 +50,6 @@ class DiskQueue:
                 f.write(f"{self.head},{self.tail}")
 
         """ Initialize get & put memory buffers   """
-        
-
         
 
     def _sync_index_pointers(self, head, tail):
@@ -83,15 +85,15 @@ class DiskQueue:
         '''
 
 
-
-        self._sync_memory_buffer_to_fs('put_buffer')
-        self._sync_memory_buffer_to_fs('get_buffer')
-        self.put_memory_buffer = []
-        self.get_memory_buffer = []
-        self.tail += 1
-        if self.head > 0:
-            self.head -= 1
-        self._sync_index_pointers(self.head, self.tail)
+        with self._thread_lock:
+            self._sync_memory_buffer_to_fs('put_buffer')
+            self._sync_memory_buffer_to_fs('get_buffer')
+            self.put_memory_buffer = []
+            self.get_memory_buffer = []
+            self.tail += 1
+            if self.head > 0:
+                self.head -= 1
+            self._sync_index_pointers(self.head, self.tail)
 
     
 
@@ -105,6 +107,7 @@ class DiskQueue:
         else:
             file_name  = os.path.join(self.queue_dir, str(self.head-1))
             mem_buffer = self.get_memory_buffer
+
         with open(file_name, 'wb+') as fp:
             marshal.dump(mem_buffer, fp)
 
@@ -128,9 +131,9 @@ class DiskQueue:
 
     def __len__(self):
         """ Return the length of the queue"""
-
-        return (self.tail - self.head)  * self.cache_size + (len(self.get_memory_buffer) \
-                + len(self.put_memory_buffer))
+        with self._thread_lock:
+            return (self.tail - self.head)  * self.cache_size + (len(self.get_memory_buffer) \
+                    + len(self.put_memory_buffer))
 
     def close(self):
         pass
@@ -141,31 +144,31 @@ class DiskQueue:
         """
         Get an object from the queue.
         """
+        with self._thread_lock:
 
-
-        # Check if anything is present in the `get` memory buffer
-        if self.get_memory_buffer:
-            return self.get_memory_buffer.pop(0)
-
-        else:
-            # Check head & tail pointers are same
-            if self.head == self.tail:
-                self.get_memory_buffer = self.put_memory_buffer
-                self.put_memory_buffer = []
+            # Check if anything is present in the `get` memory buffer
+            if self.get_memory_buffer:
+                return self.get_memory_buffer.pop(0)
 
             else:
-                self._sync_from_fs_to_memory_buffer()
-                self.head += 1 
-                self._sync_index_pointers(self.head, self.tail)
-    
-        try: 
-            obj = self.get_memory_buffer[0]
-        except IndexError:
-            obj = None
-        else:
-            del self.get_memory_buffer[0]
+                # Check head & tail pointers are same
+                if self.head == self.tail:
+                    self.get_memory_buffer = self.put_memory_buffer
+                    self.put_memory_buffer = []
+
+                else:
+                    self._sync_from_fs_to_memory_buffer()
+                    self.head += 1 
+                    self._sync_index_pointers(self.head, self.tail)
         
-        return obj
+            try: 
+                obj = self.get_memory_buffer[0]
+            except IndexError:
+                obj = None
+            else:
+                del self.get_memory_buffer[0]
+            
+            return obj
 
 
     def _put_unsafe(self, obj):
@@ -173,13 +176,14 @@ class DiskQueue:
         Put an obj into the queue
         """
     
-        if len(self.put_memory_buffer) >= self.cache_size:
-            self._sync_memory_buffer_to_fs('put_buffer')
-            self.put_memory_buffer = []
-            self.tail += 1
-            self._sync_index_pointers(self.head, self.tail)
-        self.put_memory_buffer.append(obj)
-        
+        with self._thread_lock:
+            if len(self.put_memory_buffer) >= self.cache_size:
+                self._sync_memory_buffer_to_fs('put_buffer')
+                self.put_memory_buffer = []
+                self.tail += 1
+                self._sync_index_pointers(self.head, self.tail)
+            self.put_memory_buffer.append(obj)
+            
 
 if __name__ == '__main__':
     import random

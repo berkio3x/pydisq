@@ -290,11 +290,10 @@ def test_queue_recover_with_last_working_breakpoints():
     assert diskq.get() == 1
     assert diskq.get() == 2
     assert diskq.get() == 3
-
-    #print(diskq.get(),">get1")
-    #print(diskq.get(),">get2")
-    #print(diskq.get(),">get3")
-    #print(diskq.get(),">get4")
     
     remove_queue(queue)
+
+
+
+
 
