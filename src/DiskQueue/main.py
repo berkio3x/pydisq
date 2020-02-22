@@ -1,6 +1,8 @@
 import os, sys
 import marshal
 import random 
+import msgpack
+
 
 from threading import Lock
 
@@ -109,7 +111,8 @@ class DiskQueue:
             mem_buffer = self.get_memory_buffer
 
         with open(file_name, 'wb+') as fp:
-            marshal.dump(mem_buffer, fp)
+            fp.write(msgpack.packb(mem_buffer))
+
 
 
     def _sync_from_fs_to_memory_buffer(self):
@@ -121,7 +124,8 @@ class DiskQueue:
         
         if os.path.exists(file_name):
             with open(file_name, 'rb') as fp:
-                data  = marshal.load(fp)
+                data = fp.read()
+                data = msgpack.unpackb(data)
                 self.get_memory_buffer = data
                 try:
                     os.remove(file_name)
