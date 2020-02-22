@@ -1,8 +1,10 @@
 # pydisq 🦦
 ####  Disk assisted queue implemented in python
 
-
 ----
+
+### Features
+* Thread safe, multiple threads can work on queue data structure.
 
 
 ⚠️ NOTE:  ***Work in progress***
