@@ -7,7 +7,7 @@
 
 * Queue content is persisted on disk after memory cache size is crossed.
 * Thread safe, multiple threads can work on queue data structure.
-* Uses msgpack for fast &  effecient binary serialization
+* Provides fast & effecient binary serialization via msgpack serialization format.
 * Ability to explicitly sync memory buffers to disk when required.
 * Recovers from last check points in case of program crash.
 
