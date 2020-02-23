@@ -6,6 +6,7 @@
 ### Features
 
 * Queue content is persisted on disk after memory cache size is crossed.
+* Expose all apis similar to standard library `queue.Queue` object.
 * Thread safe, multiple threads can work on queue data structure.
 * Provides fast & effecient binary serialization via msgpack serialization format.
 * Ability to explicitly sync memory buffers to disk when required.
