@@ -2,6 +2,7 @@ from DiskQueue import DiskQueue
 import os
 import pytest
 import shutil
+from DiskQueue.exceptions import Full
 
 
 def remove_queue(queue):
@@ -292,6 +293,30 @@ def test_queue_recover_with_last_working_breakpoints():
     assert diskq.get() == 3
     
     remove_queue(queue)
+
+def test_queue_put_max_size_throws_exception():
+    cache_size = 4
+    max_size = 3
+    queue = 'testq'
+    datadir = './'
+
+    diskq = DiskQueue(path=datadir, queue_name=queue, cache_size=cache_size, max_size=max_size)
+    
+    diskq.put(1)
+    diskq.put(2)
+    diskq.put(3)
+
+    with pytest.raises(Full):
+        diskq.put(4, block=False)
+
+
+
+
+
+    
+
+
+
 
 
 

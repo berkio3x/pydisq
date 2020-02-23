@@ -5,10 +5,12 @@ import msgpack
 
 
 from threading import Lock
+import threading
 
+from .exceptions import Full, Empty
 class DiskQueue:
 
-    def __init__(self, path, queue_name, cache_size, memory_safe=False):
+    def __init__(self, path, queue_name, cache_size, memory_safe=False, max_size=None):
 
         self.queue_name = queue_name
         self.cache_size = cache_size
@@ -19,15 +21,13 @@ class DiskQueue:
         self.get_memory_buffer = []
         self.put_memory_buffer = []
 
-        self._thread_lock = Lock()
+        self.max_size = max_size
 
+        self._thread_lock = threading.Lock()
+        self.mutex = threading.Lock()
+        self.not_empty = threading.Condition(self.mutex)
+        self.not_full  = threading.Condition(self.mutex)
 
-        if memory_safe:
-            self.get = None
-            self.put = None
-        else:
-            self.get  = self._get_unsafe
-            self.put = self._put_unsafe
 
         self._init_queue()
 
@@ -143,67 +143,124 @@ class DiskQueue:
         pass
 
 
-    def _get_unsafe(self):
-        
-        """
-        Get an object from the queue.
-        """
-        with self._thread_lock:
+    def _get(self):
 
-            # Check if anything is present in the `get` memory buffer
-            if self.get_memory_buffer:
-                return self.get_memory_buffer.pop(0)
+        # Check if anything is present in the `get` memory buffer
+        if self.get_memory_buffer:
+            return self.get_memory_buffer.pop(0)
+
+        else:
+            # Check head & tail pointers are same
+            if self.head == self.tail:
+                self.get_memory_buffer = self.put_memory_buffer
+                self.put_memory_buffer = []
 
             else:
-                # Check head & tail pointers are same
-                if self.head == self.tail:
-                    self.get_memory_buffer = self.put_memory_buffer
-                    self.put_memory_buffer = []
-
-                else:
-                    self._sync_from_fs_to_memory_buffer()
-                    self.head += 1 
-                    self._sync_index_pointers(self.head, self.tail)
+                self._sync_from_fs_to_memory_buffer()
+                self.head += 1 
+                self._sync_index_pointers(self.head, self.tail)
+    
+        try: 
+            obj = self.get_memory_buffer[0]
+        except IndexError:
+            obj = None
+        else:
+            del self.get_memory_buffer[0]
         
-            try: 
-                obj = self.get_memory_buffer[0]
-            except IndexError:
-                obj = None
+        return obj
+
+
+    def get(self, block=True , timeout=None):
+        
+        """
+        Provides an api similar to stdlib queue module. 
+        Gets an object from the queue, block by default if there is no item available to process,
+        and waits if timeout is false, otherwise if timeout is true , wait for the `timeout` seconds and raise
+        Empty exception. If block is false timeout variable is ignored
+        """
+
+        with self.not_empty:
+            if not block:
+                if self._qsize() == 0:
+                    raise Empty
+            elif timeout is None:
+                while not self._qsize():
+                    self.not_empty.wait()
+            elif timeout < 0:
+                raise ValueError("'timeout' must be a non-negative number")
             else:
-                del self.get_memory_buffer[0]
-            
+                endtime = time() + timeout
+                while not self._qsize():
+                    time_left = endtime - time()
+                    if time_left < 0.0:
+                        raise Empty
+                    self.not_empty.wait(time_left)
+            obj = self._get()
+
+            # Notify all consumer threads that a slot is empty 
+            self.not_full.notify()
+
             return obj
 
 
-    def _put_unsafe(self, obj):
+    def _qsize(self):
+        return self.__len__()
+
+
+    def _put(self, obj):
+
+        if len(self.put_memory_buffer) >= self.cache_size:
+            self._sync_memory_buffer_to_fs('put_buffer')
+            self.put_memory_buffer = []
+            self.tail += 1
+            self._sync_index_pointers(self.head, self.tail)
+        self.put_memory_buffer.append(obj)
+
+
+    def put(self, obj, block=True, timeout=None):
         """
-        Put an obj into the queue
+        Puts an obj into the queue, if block is True & timeout is None (default),
+        block if necessary until the next slot is available, if timeout is a non-negative 
+        number , it block for at most 'timeout' seconds and raises the full exception if no 
+        free slot was available within that time, otherwise ('block' is false), put an item
+        on the queue if a free slot is immediately available, else raise the full exception,
+        ('timeout' is ignored in this case
         """
-    
-        with self._thread_lock:
-            if len(self.put_memory_buffer) >= self.cache_size:
-                self._sync_memory_buffer_to_fs('put_buffer')
-                self.put_memory_buffer = []
-                self.tail += 1
-                self._sync_index_pointers(self.head, self.tail)
-            self.put_memory_buffer.append(obj)
-            
+        
+        with self.not_full:
+            if self.max_size:
+                if not block:
+                    if self._qsize() >= self.max_size:
+                        raise Full("Max que limit reached")
+                elif timeout is None:
+                    while self._qsize() >= self.max_size:
+                        self.not_full.wait()
+                elif timeout < 0:
+                    raise ValueError('timeout must be a non negative number')
+                else:
+                    endtime = time() + self.timeout
+                    while self._qsize() >= self.max_size:
+                        time_left = endtime - time()
+                        if remaining <= 0.0:
+                            raise Full
+            self._put(obj)
+            # notify other threads waiting on `not_empty` condition variable
+            self.not_empty.notify()
 
-if __name__ == '__main__':
-    import random
-    dummy_data = []
+               
+    def put_nowait(self, item):
+        '''Put an item into the queue without blocking.
+        Only enqueue the item if a free slot is immediately available.
+        Otherwise raise the Full exception.
+        '''
+        return self.put(item, block=False)
 
-    for i in range(1000000):
-        dummy_data.append({'a':random.randint(1,2000)})
+    def get_nowait(self):
+        '''Remove and return an item from the queue without blocking.
+        Only get an item if one is immediately available. Otherwise
+        raise the Empty exception.
+        '''
+        return self.get(block=False)
 
-    diskQ = DiskQueue(path='./', queue_name='es-miss', cache_size=10000)
-     
-    for obj in dummy_data:
-        print(f"adding entry {obj}")
-        diskQ.put(obj)
 
-    
-    print("Getting entries from queue")
-    for i in range(1000000):
-        print(diskQ.get())
 
