@@ -39,7 +39,7 @@ for i in range(50):
 ```
 
 
-#### Multiple workers using threads.
+#### Multiple producer / consumer example (threads).
 ```python
 from DiskQueue import DiskQueue
 import threading
