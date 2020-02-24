@@ -1,3 +1,6 @@
+![](https://img.shields.io/static/v1?label=made%20in&message=python&color=%3CCOLOR%3E)
+
+
 # pydisq 🦦
  *Disk assisted queue implemented in python*
 
