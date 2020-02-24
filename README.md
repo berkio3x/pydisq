@@ -1,3 +1,6 @@
+![](https://img.shields.io/static/v1?label=made%20in&message=python&color=%3CCOLOR%3E)
+
+
 # pydisq 🦦
  *Disk assisted queue implemented in python*
 
@@ -6,6 +9,7 @@
 ### Features
 
 * Queue content is persisted on disk after memory cache size is crossed.
+* Expose all apis similar to standard library `queue.Queue` object.
 * Thread safe, multiple threads can work on queue data structure.
 * Provides fast & effecient binary serialization via msgpack serialization format.
 * Ability to explicitly sync memory buffers to disk when required.
