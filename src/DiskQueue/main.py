@@ -50,6 +50,8 @@ class DiskQueue:
             os.mkdir(self.queue_dir)
             with open(self.index_file, 'w') as f:
                 f.write(f"{self.head},{self.tail}")
+                f.flush()
+                os.fsync(f.fileno())
 
         """ Initialize get & put memory buffers   """
         
@@ -64,6 +66,8 @@ class DiskQueue:
             f.seek(0)
             f.write(f"{head},{tail}")
 
+            f.flush()
+            os.fsync(f.fileno())
 
     def sync(self):
         """
@@ -112,6 +116,8 @@ class DiskQueue:
 
         with open(file_name, 'wb+') as fp:
             fp.write(msgpack.packb(mem_buffer))
+            fp.flush()
+            os.fsync(fp.fileno())
 
 
 
