@@ -309,6 +309,85 @@ def test_queue_put_max_size_throws_exception():
     with pytest.raises(Full):
         diskq.put(4, block=False)
 
+    remove_queue(queue)
+
+def test_peek_raises_value_error_on_negative_count():
+    cache_size = 4
+    max_size = 3
+    queue = 'testq'
+    datadir = './'
+
+    diskq = DiskQueue(path=datadir, queue_name=queue, cache_size=cache_size, max_size=max_size)
+    
+    diskq.put(1)
+    diskq.put(2)
+    diskq.put(3)
+    with pytest.raises(ValueError):
+        diskq.peek(-1)
+
+    remove_queue(queue)
+
+
+def test_peek():
+    cache_size = 4
+    queue = 'testq'
+    datadir = './'
+
+    diskq = DiskQueue(path=datadir, queue_name=queue, cache_size=cache_size)
+    
+    diskq.put(1, block=False)
+    diskq.put(2, block=False)
+    diskq.put(3, block=False)
+    diskq.put(4, block=False)
+    diskq.put(5, block=False)
+
+
+    assert diskq.peek() == 1
+    
+    remove_queue(queue)
+
+
+def test_peeking_when_peek_value_is_smaller_than_put_buffer():
+    cache_size = 4
+    queue = 'testq'
+    datadir = './'
+
+    diskq = DiskQueue(path=datadir, queue_name=queue, cache_size=cache_size)
+    
+    diskq.put(1, block=False)
+    diskq.put(2, block=False)
+    diskq.put(3, block=False)
+    diskq.put(4, block=False)
+    diskq.put(6, block=False)
+    diskq.put(7, block=False)
+    diskq.put(8, block=False)
+    diskq.put(9, block=False)
+
+    assert diskq.peek(2) == [1,2]
+    
+    remove_queue(queue)
+
+
+def test_peeking_when_peek_value_is_greater_than_put_buffer():
+    cache_size = 2
+    queue = 'testq'
+    datadir = './'
+
+    diskq = DiskQueue(path=datadir, queue_name=queue, cache_size=cache_size)
+    
+    diskq.put(1, block=False)
+    diskq.put(2, block=False)
+    diskq.put(3, block=False)
+    diskq.put(4, block=False)
+    diskq.put(6, block=False)
+    diskq.put(7, block=False)
+    diskq.put(8, block=False)
+    diskq.put(9, block=False)
+
+    assert diskq.peek(4) == [1,2,3,4]
+    
+    remove_queue(queue)
+
 
 
 

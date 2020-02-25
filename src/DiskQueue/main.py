@@ -115,9 +115,10 @@ class DiskQueue:
 
 
 
-    def _sync_from_fs_to_memory_buffer(self):
+    def _sync_from_fs_to_memory_buffer(self, readonly=False):
         """
-        Sync data from fs to memory cache
+        Sync data from fs to memory cache, when read only is False(default) the file is
+        deleted after loading it into memory , otherwise do not delete the file(used for peek()).
         """
        
         file_name  = os.path.join(self.queue_dir, str(self.head))
@@ -127,11 +128,12 @@ class DiskQueue:
                 data = fp.read()
                 data = msgpack.unpackb(data)
                 self.get_memory_buffer = data
-                try:
-                    os.remove(file_name)
-                except Exception as e:
-                    print(e)
-                    print("error removing queue file {file_name} from disk")
+                if not readonly:
+                    try:
+                        os.remove(file_name)
+                    except Exception as e:
+                        print(e)
+                        print("error removing queue file {file_name} from disk")
 
     def __len__(self):
         """ Return the length of the queue"""
@@ -247,7 +249,55 @@ class DiskQueue:
             # notify other threads waiting on `not_empty` condition variable
             self.not_empty.notify()
 
-               
+
+    def _read_file(self, index):
+        '''Read a file with given `index` from disk'''
+        
+        file_name = os.path.join(self.queue_dir, str(index))
+        if os.path.exists(file_name):
+            with open(file_name, 'rb') as fp:
+                data = fp.read()
+                data = msgpack.unpackb(data)
+                return data 
+        else:
+            raise KeyError('yo')
+
+ 
+    def peek(self,count=1):
+        '''Return the top items of queue without popping it, 
+           the default no of items is 1 , otherwise  return `count` no of items.
+           Non blocking by default.Multiple threads doinf a peek() will return the same value
+        '''
+
+        if count <= 0:
+            raise ValueError('Argument to peek() must be a positive integer')
+        else:
+            c = 1
+
+            get_buffer_index = 0
+            file_index = 0
+            objects = []
+            #import pdb;pdb.set_trace()
+
+            data = self.get_memory_buffer
+
+            while c <= count:
+                if data  and (get_buffer_index < self.cache_size) :
+                        obj = data[get_buffer_index]
+                        objects.append(obj)
+                        c += 1
+                        get_buffer_index += 1
+                else:
+                    data = self._read_file(file_index)
+                    file_index += 1
+                    get_buffer_index = 0
+
+            if len(objects) == 1 : 
+                return objects[0]
+            else:
+                return objects            
+ 
+            
     def put_nowait(self, item):
         '''Put an item into the queue without blocking.
         Only enqueue the item if a free slot is immediately available.
@@ -264,3 +314,4 @@ class DiskQueue:
 
 
 
+	
