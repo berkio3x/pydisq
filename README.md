@@ -87,6 +87,30 @@ worker_thread1.join()
 worker_thread2.join()
 ```
 
+##### peek()
+```python
+
+# peek will not remove the objects from queue
+
+cache_size = 2
+queue = 'testq'
+datadir = './'
+
+diskq = DiskQueue(path=datadir, queue_name=queue, cache_size=cache_size)
+
+diskq.put(1)
+diskq.put(2)
+diskq.put(3)
+diskq.put(4)
+diskq.put(5)
+diskq.put(6)
+diskq.put(7)
+diskq.put(8)
+
+diskq.peek(4)  # will give [1,2,3,4]
+```
+
+
 ### Tests
 Run test by using this commands.
 ```bash
