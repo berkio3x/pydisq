@@ -273,12 +273,9 @@ class DiskQueue:
             raise ValueError('Argument to peek() must be a positive integer')
         else:
             c = 1
-
             get_buffer_index = 0
             file_index = 0
             objects = []
-            #import pdb;pdb.set_trace()
-
             data = self.get_memory_buffer
 
             while c <= count:
