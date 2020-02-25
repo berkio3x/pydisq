@@ -39,43 +39,52 @@ for i in range(50):
 ```
 
 
-#### Multiple workers using threads.
+#### Multiple producer / consumer example (threads).
 ```python
 from DiskQueue import DiskQueue
 import threading
 import time
 import random
 
-# define the queue
 diskq = DiskQueue(path='./', queue_name='es-miss', cache_size=4)
 
-# Insert some objects into the queue
-for i in range(20):
-    diskq.put({'data':i})
+
+def producer(producer_id):
+    while True:
+        obj = random.randint(1,50)
+        print(f'[🤖 WORKER THREAD] : {producer_id}: {obj}')
+        diskq.put(obj)
+        time.sleep(random.randint(2,4))
 
 
-# define worker method
 def consumer(worker_id):
     
     obj = diskq.get()
     while obj:
-        print(f'Thread => {worker_id} : {obj}')
+        print(f'[🙋‍♂️ CONSUMER THREAD] => {worker_id} : {obj}')
         time.sleep(1)
         obj = diskq.get()
 
-consumers = []
 
 
-# Create 2 worker threads to consume from the the queue
-for i in range(2):
-    T = threading.Thread(target=consumer, args=(random.randint(1,10),))
-    consumers.append(T)
-    T.start()
+producer_thread1 = threading.Thread(target=producer, args=(1,))
+producer_thread2 = threading.Thread(target=producer, args=(2,))
 
 
-# Wait for the threads to join
-for worker in consumers:
-    worker.join()
+worker_thread1 = threading.Thread(target=consumer, args=(1,))
+worker_thread2 = threading.Thread(target=consumer, args=(2,))
+
+producer_thread1.start();
+producer_thread2.start();
+
+worker_thread1.start();
+worker_thread2.start()
+
+
+producer_thread1.join();
+producer_thread2.join();
+worker_thread1.join()
+worker_thread2.join()
 ```
 
 ### Tests
