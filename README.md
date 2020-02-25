@@ -89,6 +89,7 @@ worker_thread2.join()
 
 ##### peek()
 ```python
+
 # peek will not remove the objects from queue
 
 cache_size = 2
@@ -97,16 +98,16 @@ datadir = './'
 
 diskq = DiskQueue(path=datadir, queue_name=queue, cache_size=cache_size)
 
-diskq.put(1, block=False)
-diskq.put(2, block=False)
-diskq.put(3, block=False)
-diskq.put(4, block=False)
-diskq.put(6, block=False)
-diskq.put(7, block=False)
-diskq.put(8, block=False)
-diskq.put(9, block=False)
+diskq.put(1)
+diskq.put(2)
+diskq.put(3)
+diskq.put(4)
+diskq.put(5)
+diskq.put(6)
+diskq.put(7)
+diskq.put(8)
 
-print( diskq.peek(4) ) # will give [1,2,3,4]
+diskq.peek(4)  # will give [1,2,3,4]
 ```
 
 
