@@ -389,14 +389,34 @@ def test_peeking_when_peek_value_is_greater_than_put_buffer():
     remove_queue(queue)
 
 
+def test_put_negative_timeout_paramater():
 
+    cache_size = 2
+    queue = 'testq'
+    datadir = './'
 
-
+    diskq = DiskQueue(path=datadir,max_size=10, queue_name=queue, cache_size=cache_size)
     
+    with pytest.raises(ValueError):
+        diskq.put(1, timeout=-2)
+    
+    remove_queue(queue)
+    
+    
+def test_put_negative_timeout_paramater():
 
+    cache_size = 2
+    queue = 'testq'
+    datadir = './'
 
-
-
+    diskq = DiskQueue(path=datadir,max_size=10, queue_name=queue, cache_size=cache_size)
+    
+    with pytest.raises(ValueError):
+        diskq.put(1, timeout=-2)
+    
+    remove_queue(queue)
+    
+    
 
 
 
