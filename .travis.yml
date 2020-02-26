@@ -1,0 +1,5 @@
+language: python3
+install: 
+    - "pip3 install pytest"
+script:
+    - "pytest -vvv"

@@ -27,6 +27,9 @@ class DiskQueue:
         self.mutex = threading.Lock()
         self.not_empty = threading.Condition(self.mutex)
         self.not_full  = threading.Condition(self.mutex)
+        
+        self.all_tasks_done = threading.Condition(self.mutex)
+        self.unfinished_tasks = 0
 
 
         self._init_queue()
@@ -252,10 +255,50 @@ class DiskQueue:
                         if remaining <= 0.0:
                             raise Full
             self._put(obj)
+            self.unfinished_tasks += 1
             # notify other threads waiting on `not_empty` condition variable
             self.not_empty.notify()
 
 
+
+
+    def task_done(self):
+        '''Indicate that a formerly enqueued task is complete.
+        Used by Queue consumer threads.  For each get() used to fetch a task,
+        a subsequent call to task_done() tells the queue that the processing
+        on the task is complete.
+        If a join() is currently blocking, it will resume when all items
+        have been processed (meaning that a task_done() call was received
+        for every item that had been put() into the queue).
+        Raises a ValueError if called more times than there were items
+        placed in the queue.
+        '''
+        
+        with self.all_tasks_done:
+           unfinished = self.unfinished_tasks - 1
+           if unfinished <= 0:
+              if unfinished < 0:
+                  raise ValueError('task_done() called too many times')
+              self.all_tasks_done.notify_all()
+           self.unfinished_task = unfinished
+
+
+
+
+    def join(self):
+        '''Blocks until all items in the Queue have been gotten & processed.
+           
+        The count of unfinished task goes up  whenever an item is added to the queue.
+        The count goes down whener a consumer thread  calls task_done() to indicate
+        the item was retrieved and all work on it is complete.
+        When the  count of unfinished  tasks drops to zero, join unblocks.
+        '''
+
+        with self.all_task_done:
+            while self.unfinished_tasks:
+                self.all_tasks_done.wait()
+
+      
     def _read_file(self, index):
         '''Read a file with given `index` from disk'''
         

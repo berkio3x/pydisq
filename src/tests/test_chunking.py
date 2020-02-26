@@ -3,7 +3,7 @@ import os
 import pytest
 import shutil
 from DiskQueue.exceptions import Full
-
+import threading
 
 def remove_queue(queue):
     shutil.rmtree(queue)
@@ -416,8 +416,21 @@ def test_put_negative_timeout_paramater():
     
     remove_queue(queue)
     
+
+def test_queue_size():
+
+    cache_size = 2
+    queue = 'testq'
+    datadir = './'
+
+    diskq = DiskQueue(path=datadir, queue_name=queue, cache_size=cache_size)
+    
+    for i in range(5):
+        diskq.put(i)
+    # TODO add a public method qsize() on queue Object
+    assert len(diskq) == 5
     
 
 
-
+    remove_queue(queue)
 
