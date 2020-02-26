@@ -1,5 +1,5 @@
 ![](https://img.shields.io/static/v1?label=made%20in&message=python&color=%3CCOLOR%3E)
-
+[![Build Status](https://travis-ci.com/berkio3x/pydisq.svg?branch=master)](https://travis-ci.com/berkio3x/pydisq)
 
 # pydisq 🦦
  *Disk assisted queue implemented in python*
