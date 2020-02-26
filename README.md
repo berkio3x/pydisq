@@ -120,6 +120,6 @@ $ cd src/tests && pytest -vvv
 
 
 #### Contributing
-Want to add features? Improve existing code or fix bugs? Awesome!! Clone the repository and submit a pull request.
+Want to add features? Improve existing code or fix bugs? Awesome!! Please fork the repository and submit a pull request.
 
 
