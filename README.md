@@ -117,3 +117,9 @@ Run test by using this commands.
 $ cd src/tests && pytest -vvv
 
 ```
+
+
+#### Contributing
+Want to add features? Improve existing code or fix bugs? Awesome!! Clone the repository and submit a pull request.
+
+
